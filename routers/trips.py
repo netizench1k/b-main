@@ -16,6 +16,10 @@ async def create_trip(
     db: AsyncSession = Depends(get_db)
 ):  
     print("Received data:", trip_data.dict())
+
+    # Преобразуем departure_time в naive (убираем timezone)
+    departure_time_naive = trip_data.departure_time.replace(tzinfo=None)
+
     # 1. Получить/создать пользователя
     user = await crud.get_or_create_user(db, driver_tg_id)
     
@@ -24,20 +28,20 @@ async def create_trip(
     
     # 3. Создать поездку
     trip = models.Trip(
-        driver_id=user.id,
-        trip_type=trip_data.trip_type,
-        point=formatted,
-        point_lat=lat,
-        point_lon=lon,
-        departure_time=trip_data.departure_time,
-        seats_total=trip_data.seats_total,
-        seats_available=trip_data.seats_total,
-        price=trip_data.price,
-        comment=trip_data.comment,
-        max_deviation_km=trip_data.max_deviation_km,
-        time_flexibility_minutes=trip_data.time_flexibility_minutes,
-        status="active"
-    )
+    driver_id=user.id,
+    trip_type=trip_data.trip_type,
+    point=formatted,
+    point_lat=lat,
+    point_lon=lon,
+    departure_time=departure_time_naive,  # ← здесь
+    seats_total=trip_data.seats_total,
+    seats_available=trip_data.seats_total,
+    price=trip_data.price,
+    comment=trip_data.comment,
+    max_deviation_km=trip_data.max_deviation_km,
+    time_flexibility_minutes=trip_data.time_flexibility_minutes,
+    status="active"
+)
     db.add(trip)
     await db.commit()
     await db.refresh(trip)

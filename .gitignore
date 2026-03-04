@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.venv
+*.log
+
+# Node / Vue
+node_modules/
+dist/
+.vite/
+.vite-temp/
+*.local
+
+# Firebase
+.firebase/
+firebase-debug.log
+.firebaserc
+firebase.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

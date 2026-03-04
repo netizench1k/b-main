@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from datetime import datetime
 from typing import Optional, List
 
@@ -20,6 +20,11 @@ class TripCreate(BaseModel):
     trip_type: str
     point: str
     departure_time: datetime
+    @validator('departure_time', pre=True, always=True)
+    def make_naive(cls, v):
+        if v.tzinfo is not None:
+            return v.replace(tzinfo=None)
+        return v
     seats_total: int = Field(ge=1, le=8)
     price: int = Field(ge=0)
     comment: Optional[str] = None
