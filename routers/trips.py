@@ -15,10 +15,13 @@ async def create_trip(
     driver_tg_id: int = Query(...),
     db: AsyncSession = Depends(get_db)
 ):  
-    print("Received data:", trip_data.dict())
+    # Валидатор уже должен был сделать departure_time naive, но на всякий случай:
+    departure_time = trip_data.departure_time
+    if departure_time.tzinfo is not None:
+        departure_time = departure_time.replace(tzinfo=None)
 
-    # Преобразуем departure_time в naive (убираем timezone)
-    departure_time_naive = trip_data.departure_time.replace(tzinfo=None)
+    user = await crud.get_or_create_user(db, driver_tg_id)
+    lat, lon, formatted = await geo.geocode_address(trip_data.point, db)
 
     # 1. Получить/создать пользователя
     user = await crud.get_or_create_user(db, driver_tg_id)
@@ -33,7 +36,7 @@ async def create_trip(
     point=formatted,
     point_lat=lat,
     point_lon=lon,
-    departure_time=departure_time_naive,  # ← здесь
+    departure_time=departure_time,  # ← здесь
     seats_total=trip_data.seats_total,
     seats_available=trip_data.seats_total,
     price=trip_data.price,

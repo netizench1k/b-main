@@ -5,6 +5,7 @@ from geo import haversine, get_route
 from datetime import datetime
 from typing import List, Optional
 import models
+from sqlalchemy.orm import selectinload
 
 # ----- ПОЛЬЗОВАТЕЛИ -----
 async def get_or_create_user(db: AsyncSession, tg_id: int, tg_username: str = None, first_name: str = None) -> User:
@@ -22,6 +23,7 @@ async def get_active_trips(db: AsyncSession, limit: int = 20, offset: int = 0):
         select(models.Trip)
         .where(models.Trip.status == "active")
         .order_by(models.Trip.departure_time)
+        .options(selectinload(models.Trip.driver))  # загружаем водителя
         .limit(limit)
         .offset(offset)
     )

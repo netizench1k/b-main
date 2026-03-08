@@ -45,15 +45,15 @@ async def create_user(
     )
     return user
 
-@router.get("/{tg_id}/trips", response_model=dict)
+@router.get("/{tg_id}/trips")
 async def get_user_trips(
     tg_id: int,
     db: AsyncSession = Depends(get_db)
 ):
-    """Получить поездки пользователя (как водитель и как пассажир)."""
+    # Получаем пользователя (или создаём, если не существует)
     user = await get_or_create_user(db, tg_id)
     
-    # Поездки как водитель
+    # Поездки как водитель (с подгрузкой водителя)
     driver_trips_result = await db.execute(
         select(models.Trip)
         .where(models.Trip.driver_id == user.id)
@@ -62,19 +62,22 @@ async def get_user_trips(
     )
     driver_trips = driver_trips_result.scalars().all()
     
-    # Бронирования как пассажир
+    # Бронирования как пассажир (с подгрузкой поездки и водителя)
     passenger_bookings_result = await db.execute(
         select(models.Booking)
         .where(models.Booking.passenger_id == user.id)
         .options(
-            selectinload(models.Booking.trip)
-            .selectinload(models.Trip.driver)
+            selectinload(models.Booking.trip).selectinload(models.Trip.driver)
         )
         .order_by(models.Booking.created_at.desc())
     )
     passenger_bookings = passenger_bookings_result.scalars().all()
     
+    # Преобразуем модели в Pydantic-схемы
+    driver_trips_schema = [schemas.TripResponse.model_validate(trip) for trip in driver_trips]
+    passenger_bookings_schema = [schemas.BookingWithTripResponse.model_validate(booking) for booking in passenger_bookings]
+    
     return {
-        "as_driver": driver_trips,
-        "as_passenger": passenger_bookings
+        "as_driver": driver_trips_schema,
+        "as_passenger": passenger_bookings_schema
     }

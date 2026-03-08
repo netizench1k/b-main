@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 from typing import Optional, List
 
@@ -20,16 +20,22 @@ class TripCreate(BaseModel):
     trip_type: str
     point: str
     departure_time: datetime
-    @validator('departure_time', pre=True, always=True)
-    def make_naive(cls, v):
-        if v.tzinfo is not None:
-            return v.replace(tzinfo=None)
-        return v
     seats_total: int = Field(ge=1, le=8)
     price: int = Field(ge=0)
     comment: Optional[str] = None
     max_deviation_km: int = 3
     time_flexibility_minutes: int = 30
+
+    @field_validator('departure_time', mode='before')
+    @classmethod
+    def make_naive(cls, v):
+        # Если пришла строка, преобразуем в datetime
+        if isinstance(v, str):
+            v = datetime.fromisoformat(v.replace('Z', '+00:00'))
+        # Если объект содержит временную зону, убираем её
+        if hasattr(v, 'tzinfo') and v.tzinfo is not None:
+            return v.replace(tzinfo=None)
+        return v
 
 class TripResponse(BaseModel):
     id: int
@@ -59,6 +65,7 @@ class BookingCreate(BaseModel):
 class BookingResponse(BaseModel):
     id: int
     trip_id: int
+    trip: 'TripResponse'  # вложенная поездка
     passenger_id: int
     status: str
     created_at: datetime
